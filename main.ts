@@ -237,7 +237,6 @@ export default class ZoomInHeaders extends Plugin {
 
         const currentInfo = parser.headerByStartLine(root)
 
-        console.log(parser.headersInfo)
         this.zoomOut(editor);
 
         for (let i = editor.firstLine(), l = editor.lastLine(); i <= l; i++) {
