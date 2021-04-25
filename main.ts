@@ -237,6 +237,7 @@ export default class ZoomInHeaders extends Plugin {
 
         const currentInfo = parser.headerByStartLine(root)
 
+        console.log(parser.headersInfo)
         this.zoomOut(editor);
 
         for (let i = editor.firstLine(), l = editor.lastLine(); i <= l; i++) {
@@ -366,21 +367,18 @@ class HeaderParser {
                 }
             })
             .map((e, i, arr) => {
-                let endOffset = i + 1
-                while(endOffset < arr.length - 1) {
-                    const nextHeader = arr[endOffset]
-                    if (nextHeader.level <= e.level) {
+                for (let c of arr.slice(i + 1)) {
+                    if (c.level <= e.level) {
                         return {
                             ...e,
-                            endLine: nextHeader.startLine - 1
+                            endLine: c.startLine - 1
                         }
                     }
-                    endOffset++
                 }
 
                 return {
                     ...e,
-                    endLine: e.startLine + endOffset - 1
+                    endLine: lines.length - 1
                 }
             })
     }
@@ -390,7 +388,7 @@ class HeaderParser {
     }
 
     pathByHeader(h: HeadersInfo): HeadersInfo[] {
-        const upperHeaders = this.headersInfo.filter(e => e.startLine < h.startLine).reverse()
+        const upperHeaders = this.headersInfo.filter(e => e?.startLine < h?.startLine).reverse()
 
         if (!upperHeaders.length) {
             return []
