@@ -1,4 +1,12 @@
-/* Sets all the text color to red! */
-body {
-    color: red;
+.zoom-header-plugin-hidden-row {
+    display: none;
+}
+
+.zoom-header-plugin-zoom-header {
+    padding: 20px 0 0 20px;
+}
+
+.zoom-header-plugin-zoom-title {
+    text-decoration: underline;
+    cursor: pointer;
 }
