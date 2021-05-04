@@ -371,7 +371,7 @@ class ZoomInHeadingsSettingsPanel extends PluginSettingTab {
             .setName('Click on zoom')
             .setDesc('Enables Ctrl+click to zoom functionality')
             .addToggle(cb => cb
-                .setValue(false)
+                .setValue(this.plugin.settings.zoomOnClick)
                 .onChange(async (value) => {
                     this.plugin.settings.zoomOnClick = value;
                     await this.plugin.saveSettings();
@@ -449,13 +449,9 @@ class HeaderParser {
             return []
         }
 
-        for (let i = 0; i < upperHeaders.length; i++) {
-            if (upperHeaders[i].level >= h.level) {
-                return upperHeaders.slice(0, i).reverse()
-            }
-        }
-
         return upperHeaders
+            .filter(e => e.level < h.level )
+            .filter((e, i, arr) => arr.map(e => e.level).indexOf(e.level) === i)
     }
 }
 
