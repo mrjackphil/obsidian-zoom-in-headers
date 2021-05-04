@@ -1,11 +1,26 @@
-import {MarkdownView, Plugin} from 'obsidian';
+import {App, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import * as CodeMirror from 'codemirror';
 
-export default class ZoomInHeaders extends Plugin {
+interface ZoomInHeadingsSettings {
+    zoomOnClick: boolean;
+}
+
+const DEFAULT_SETTINGS: ZoomInHeadingsSettings = {
+    zoomOnClick: false
+}
+
+
+export default class ZoomInHeadings extends Plugin {
+    settings: ZoomInHeadingsSettings;
+
     private zoomStates: WeakMap<CodeMirror.Editor, ZoomState> = new WeakMap();
 
     async onload() {
         console.log('loading zoom in header plugin')
+
+        await this.loadSettings();
+
+        this.addSettingTab(new ZoomInHeadingsSettingsPanel(this.app, this));
 
         this.registerCodeMirror((cm) => {
             cm.on("beforeChange", this.handleBeforeChange);
@@ -41,10 +56,21 @@ export default class ZoomInHeaders extends Plugin {
         });
     }
 
-    private handleClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement | null;
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
 
-        let wrap = target;
+    async saveSettings() {
+        await this.saveData(this.settings);
+    }
+
+    private handleClick = (e: MouseEvent) => {
+        if (!e.ctrlKey || !this.settings.zoomOnClick) {
+            return
+        }
+
+        let wrap = e.target as HTMLElement | null;
+
         while (wrap) {
             if (wrap.classList.contains("CodeMirror-wrap")) {
                 break;
@@ -272,7 +298,7 @@ export default class ZoomInHeaders extends Plugin {
             return a;
         };
 
-        const createHeader = () => {
+        const createBreadcrumbs = () => {
             const div = document.createElement("div");
             div.className = "zoom-header-plugin-zoom-header";
             const path = parser.pathByHeader(currentInfo)
@@ -295,7 +321,7 @@ export default class ZoomInHeaders extends Plugin {
             return div;
         };
 
-        const zoomHeader = createHeader();
+        const zoomHeader = createBreadcrumbs();
         editor.getWrapperElement().prepend(zoomHeader);
 
         this.zoomStates.set(
@@ -325,6 +351,34 @@ export default class ZoomInHeaders extends Plugin {
     }
 
 }
+
+class ZoomInHeadingsSettingsPanel extends PluginSettingTab {
+    plugin: ZoomInHeadings;
+
+    constructor(app: App, plugin: ZoomInHeadings) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
+
+    display(): void {
+        let {containerEl} = this;
+
+        containerEl.empty();
+
+        containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+
+        new Setting(containerEl)
+            .setName('Click on zoom')
+            .setDesc('Enables Ctrl+click to zoom functionality')
+            .addToggle(cb => cb
+                .setValue(false)
+                .onChange(async (value) => {
+                    this.plugin.settings.zoomOnClick = value;
+                    await this.plugin.saveSettings();
+                }));
+    }
+}
+
 
 class HeaderParser {
     editor: CodeMirror.Editor
@@ -387,7 +441,9 @@ class HeaderParser {
     }
 
     pathByHeader(h: HeadersInfo): HeadersInfo[] {
-        const upperHeaders = this.headersInfo.filter(e => e?.startLine < h?.startLine).reverse()
+        const upperHeaders = this.headersInfo
+            .filter(e => e?.startLine < h?.startLine)
+            .reverse()
 
         if (!upperHeaders.length) {
             return []
@@ -397,7 +453,6 @@ class HeaderParser {
             if (upperHeaders[i].level >= h.level) {
                 return upperHeaders.slice(0, i).reverse()
             }
-
         }
 
         return upperHeaders
